@@ -12,6 +12,12 @@ export const TechStack = () => {
       className: "h-10 w-14",
     },
     {
+      title: "Typescript",
+      src: "/images/logos/typescript.png",
+
+      className: "h-10 w-14",
+    },
+    {
       title: "AWS",
       src: "/images/logos/aws.webp",
 
@@ -47,6 +53,26 @@ export const TechStack = () => {
 
       className: "h-10 w-24",
     },
+    {
+      title: "MySql",
+      src: "/images/logos/icons8-mysql-100.png",
+      className: "h-12 w-12",
+    },
+    {
+      title: "PostgreSql",
+      src: "/images/logos/icons8-postgresql-48.png",
+      className: "h-10 w-10",
+    },
+    {
+      title: "MongoDB",
+      src: "/images/logos/icons8-mongodb-48.png",
+      className: "h-10 w-10",
+    },
+    {
+      title: "Docker",
+      src: "/images/logos/icons8-docker-48.png",
+      className: "h-10 w-10",
+    },
   ];
   return (
     <div>
@@ -58,13 +84,13 @@ export const TechStack = () => {
       </Heading>
       <div className="flex flex-wrap">
         {stack.map((item) => (
-          <Image
+           <Image
             src={item.src}
             key={item.src}
-            width={`200`}
-            height={`200`}
+            width={200}
+            height={200}
             alt={item.title}
-            className={twMerge("object-contain mr-4 mb-4", item.className)}
+            className={twMerge("mr-4 mb-4 object-contain", item.className)}
           />
         ))}
       </div>
