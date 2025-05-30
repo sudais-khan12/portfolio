@@ -4,76 +4,108 @@ import { Heading } from "./Heading";
 import { twMerge } from "tailwind-merge";
 
 export const TechStack = () => {
-  const stack = [
+    const stack = [
+    // Frontend
     {
-      title: "Next.js",
-      src: "/images/logos/next.png",
+        title: "Next.js",
+        src: "/images/logos/next.png",
+        className: "h-10 w-14",
+    },
+    {
+        title: "Typescript",
+        src: "/images/logos/typescript.png",
+        className: "h-10 w-12",
+    },
+    {
+        title: "Tailwind",
+        src: "/images/logos/tailwind.png",
+        className: "h-10 w-24",
+    },
+    {
+        title: "Framer Motion",
+        src: "/images/logos/framer.webp",
+        className: "h-10 w-10",
+    },
+    {
+        title: "Figma",
+        src: "/images/logos/figma.png",
+        className: "h-10 w-8",
+    },
 
-      className: "h-10 w-14",
+    // Backend / API
+    {
+        title: "Node",
+        src: "/images/logos/node.png",
+        className: "h-10 w-12",
     },
     {
-      title: "Typescript",
-      src: "/images/logos/typescript.png",
+        title: "Express",
+        src: "/images/logos/icons8-express-js-50.png",
+        className: "h-10 w-12",
+    },
+    {
+        title: "Graphql",
+        src: "/images/logos/icons8-graphql-48.png",
+        className: "h-10 w-12",
+    },
 
-      className: "h-10 w-14",
+    // Databases
+    {
+        title: "MongoDB",
+        src: "/images/logos/icons8-mongodb-48.png",
+        className: "h-10 w-10",
     },
     {
-      title: "AWS",
-      src: "/images/logos/aws.webp",
+        title: "PostgreSql",
+        src: "/images/logos/icons8-postgresql-48.png",
+        className: "h-10 w-10",
+    },
+    {
+        title: "MySql",
+        src: "/images/logos/icons8-mysql-100.png",
+        className: "h-12 w-12",
+    },
 
-      className: "h-10 w-10",
+    // DevOps / Hosting
+    {
+        title: "Vercel",
+        src: "/images/logos/vercel.png",
+        className: "h-10 w-24",
     },
     {
-      title: "Figma",
-      src: "/images/logos/figma.png",
+        title: "Docker",
+        src: "/images/logos/icons8-docker-48.png",
+        className: "h-10 w-10",
+    },
+    {
+        title: "AWS",
+        src: "/images/logos/aws.webp",
+        className: "h-10 w-10",
+    },
+    {
+        title: "Github Actions",
+        src: "/images/logos/githubactions.svg",
+        className: "h-10 w-10",
+    },
 
-      className: "h-10 w-8",
+    // Testing
+    {
+        title: "Jest",
+        src: "/images/logos/icons8-jest-48.png",
+        className: "h-10 w-10",
     },
     {
-      title: "Framer Motion",
-      src: "/images/logos/framer.webp",
-
-      className: "h-10 w-10",
+        title: "Cypress",
+        src: "/images/logos/cypress.svg",
+        className: "h-10 w-10",
     },
     {
-      title: "Node",
-      src: "/images/logos/node.png",
-
-      className: "h-10 w-12",
-    },
-    {
-      title: "Tailwind",
-      src: "/images/logos/tailwind.png",
-
-      className: "h-10 w-24",
-    },
-    {
-      title: "Vercel",
-      src: "/images/logos/vercel.png",
-
-      className: "h-10 w-24",
-    },
-    {
-      title: "MySql",
-      src: "/images/logos/icons8-mysql-100.png",
-      className: "h-12 w-12",
-    },
-    {
-      title: "PostgreSql",
-      src: "/images/logos/icons8-postgresql-48.png",
-      className: "h-10 w-10",
-    },
-    {
-      title: "MongoDB",
-      src: "/images/logos/icons8-mongodb-48.png",
-      className: "h-10 w-10",
-    },
-    {
-      title: "Docker",
-      src: "/images/logos/icons8-docker-48.png",
-      className: "h-10 w-10",
+        title: "Cucumber",
+        src: "/images/logos/Cucumber.png",
+        className: "h-10 w-10",
     },
   ];
+
   return (
     <div>
       <Heading
