@@ -10,9 +10,9 @@ import { motion } from "framer-motion";
 import About from "@/components/About";
 
 export const metadata: Metadata = {
-  title: "About | John Doe",
+  title: "About | Mustafa Zuberi",
   description:
-    "John Doe is a developer, writer and speaker. He is a digital nomad and travels around the world while working remotely.",
+    "Mustafa Zuberi is a full-stack developer who loves tackling tough problems. He’s passionate about building scalable, efficient web applications and continuously improving his skills.",
 };
 
 export default function AboutPage() {
