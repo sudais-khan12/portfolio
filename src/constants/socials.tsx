@@ -1,17 +1,24 @@
 import {
-  IconBrandLinkedin,
-  IconBrandTwitter,
+  IconBrandGithub,
+  IconBrandGoogleDrive,
+  IconMail,
+  IconPhoneCall,
 } from "@tabler/icons-react";
 
 export const socials = [
   {
-    href: "https://twitter.com/mannupaaji",
-    label: "Twitter",
-    icon: IconBrandTwitter,
+    href: "https://github.com/sudais-khan12",
+    label: "GitHub",
+    icon: IconBrandGithub,
   },
   {
-    href: "https://linkedin.com/in/mustafa-zuberi-475334231",
-    label: "LinkedIn",
-    icon: IconBrandLinkedin,
+    href: "mailto:sudaiskh31@gmail.com",
+    label: "Email",
+    icon: IconMail,
+  },
+  {
+    href: "tel:+923238744772",
+    label: "Phone",
+    icon: IconPhoneCall,
   },
 ];

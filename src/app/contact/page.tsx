@@ -8,9 +8,9 @@ import { Metadata } from "next";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Contact | Mustafa Zuberi",
+  title: "Contact | Sudais Khan",
   description:
-    "Mustafa Zuberi is a full-stack developer who loves tackling tough problems. He’s passionate about building scalable, efficient web applications and continuously improving his skills.",
+    "Sudais Khan is a full-stack developer who loves tackling tough problems. He’s passionate about building scalable, efficient web applications and continuously improving his skills.",
 };
 
 export default function Projects() {
