@@ -42,47 +42,42 @@ export default function About() {
 
       <div className="max-w-4xl">
         <Paragraph className=" mt-4">
-          Hey there, I&apos;m John Doe - a passionate developer, avid writer,
-          and a connoisseur of awesome design. Welcome to my corner of the
-          digital world!
+          Hey there — I&apos;m Sudais Khan, a dedicated developer, educator,
+          and lifelong learner with a passion for building clean, intelligent,
+          and user-friendly digital experiences.
         </Paragraph>
         <Paragraph className=" mt-4">
-          Since the early days of my journey, I&apos;ve been captivated by the
-          art of crafting exceptional digital experiences. As a developer, I
-          thrive on turning lines of code into functional and elegant solutions.
-          My goal is to not just create software, but to build digital marvels
-          that seamlessly merge form and function.
+          My journey into tech began with curiosity and a love for solving
+          real-world problems through code. Today, I specialize in modern web
+          development using TypeScript, React, and Next.js — crafting
+          pixel-perfect interfaces that don&apos;t just look good but work
+          beautifully under the hood.
         </Paragraph>
 
         <Paragraph className=" mt-4">
-          But my journey doesn&apos;t stop at coding. With a heart full of words
-          and a mind brimming with ideas, I&apos;ve ventured into the realm of
-          writing. From tech articles that unravel complex concepts to creative
-          tales that ignite the imagination, I weave words to inform, entertain,
-          and inspire.
+          But development is only part of the story. I&apos;m also deeply
+          invested in teaching and sharing knowledge, both as a computer science
+          instructor and a learner always exploring new tools, frameworks, and
+          concepts — from C++ fundamentals to advanced AI and machine learning
+          models.
         </Paragraph>
         <Paragraph className=" mt-4">
-          What sets me apart is my unwavering appreciation for design. I believe
-          that aesthetics and usability go hand in hand. My eye for awesome
-          design ensures that every project I undertake not only works
-          flawlessly under the hood but also looks stunning on the surface.
+          Design plays a central role in my work. I believe that great UX/UI is
+          as much about clarity and empathy as it is about aesthetics. Whether
+          I&apos;m refactoring a component for better performance or sketching
+          out a fresh interface, I&apos;m always thinking about the user
+          experience from every angle.
         </Paragraph>
         <Paragraph className=" mt-4">
-          Through this website, I aim to share my insights, experiences, and
-          creations with you. Whether you&apos;re a fellow developer seeking
-          solutions, a fellow writer in search of inspiration, or simply someone
-          who appreciates the finer aspects of design, there&apos;s something
-          here for you.
+          On this site, you&apos;ll find a mix of what drives me — the code I
+          write, the tools I build, and the insights I share. Whether
+          you&apos;re a fellow developer, student, collaborator, or just curious
+          about how things work behind the scenes, there&apos;s something here
+          for you.
         </Paragraph>
         <Paragraph className=" mt-4">
-          Join me on this journey of bytes and narratives, logic and creativity,
-          code and prose. Together, we can explore the boundless possibilities
-          of technology and storytelling, all while reveling in the sheer beauty
-          of thoughtful design.
-        </Paragraph>
-        <Paragraph className=" mt-4">
-          Thank you for being here, and I can&apos;t wait to embark on this
-          adventure with you.
+          Thanks for stopping by — let&apos;s build something meaningful,
+          together.
         </Paragraph>
       </div>
     </div>
