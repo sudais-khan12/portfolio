@@ -1,0 +1,474 @@
+import { BlogLayout } from "@/components/BlogLayout";
+import { CodeWindow } from "@/components/CodeWindow";
+
+export const meta = {
+  date: "2024-08-14",
+  title: "Micro-Frontends: Scaling Frontend Architecture Beyond Monoliths",
+  description:
+    "Learn advanced micro-frontend patterns using Module Federation, single-spa, and container orchestration for truly scalable frontend systems.",
+  image:
+    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3",
+  tags: ["Architecture", "Micro-Frontends", "webpack"],
+};
+
+export default (props) => <BlogLayout meta={meta} {...props} />;
+
+Micro-frontends solve the scaling problem plaguing modern frontend applications. Instead of monolithic SPAs, teams can develop, deploy, and scale independent frontend modules that compose into cohesive user experiences.
+
+## Module Federation Architecture
+
+Webpack 5's Module Federation enables runtime code sharing between independent applications:
+
+<CodeWindow title="Shell Application (Host)">
+
+```javascript
+// webpack.config.js - Shell App
+const ModuleFederationPlugin = require("@module-federation/webpack");
+
+module.exports = {
+  mode: "development",
+  devServer: { port: 3000 },
+
+  plugins: [
+    new ModuleFederationPlugin({
+      name: "shell",
+      remotes: {
+        navigation: "navigation@http://localhost:3001/remoteEntry.js",
+        products: "products@http://localhost:3002/remoteEntry.js",
+        checkout: "checkout@http://localhost:3003/remoteEntry.js",
+      },
+      shared: {
+        react: { singleton: true, eager: true },
+        "react-dom": { singleton: true, eager: true },
+        "@company/design-system": { singleton: true },
+      },
+    }),
+  ],
+};
+
+// App.jsx - Dynamic micro-frontend loading
+import React, { Suspense, lazy } from "react";
+
+const Navigation = lazy(() => import("navigation/Navigation"));
+const ProductCatalog = lazy(() => import("products/ProductCatalog"));
+const CheckoutFlow = lazy(() => import("checkout/CheckoutFlow"));
+
+function App() {
+  return (
+    <div className="app">
+      <Suspense fallback={<div>Loading navigation...</div>}>
+        <Navigation />
+      </Suspense>
+
+      <main>
+        <Suspense fallback={<div>Loading products...</div>}>
+          <ProductCatalog />
+        </Suspense>
+
+        <Suspense fallback={<div>Loading checkout...</div>}>
+          <CheckoutFlow />
+        </Suspense>
+      </main>
+    </div>
+  );
+}
+
+export default App;
+```
+
+</CodeWindow>
+
+## Independent Micro-Frontend Services
+
+Each micro-frontend operates as an autonomous application:
+
+<CodeWindow title="Products Micro-Frontend">
+
+```javascript
+// webpack.config.js - Products Service
+const ModuleFederationPlugin = require("@module-federation/webpack");
+
+module.exports = {
+  mode: "development",
+  devServer: { port: 3002 },
+
+  plugins: [
+    new ModuleFederationPlugin({
+      name: "products",
+      filename: "remoteEntry.js",
+      exposes: {
+        "./ProductCatalog": "./src/ProductCatalog",
+        "./ProductDetail": "./src/ProductDetail",
+        "./SearchFilters": "./src/SearchFilters",
+      },
+      shared: {
+        react: { singleton: true },
+        "react-dom": { singleton: true },
+        "@company/design-system": { singleton: true },
+      },
+    }),
+  ],
+};
+
+// ProductCatalog.jsx
+import React, { useState, useEffect } from "react";
+import { useProducts } from "./hooks/useProducts";
+import { ProductCard, LoadingGrid } from "@company/design-system";
+
+export default function ProductCatalog() {
+  const [filters, setFilters] = useState({});
+  const { products, loading, error } = useProducts(filters);
+
+  // Independent state management
+  useEffect(() => {
+    // Analytics for products micro-frontend
+    window.analytics?.track("products_catalog_viewed", {
+      microFrontend: "products",
+      timestamp: Date.now(),
+    });
+  }, []);
+
+  if (loading) return <LoadingGrid />;
+  if (error) return <div>Error loading products</div>;
+
+  return (
+    <section className="product-catalog">
+      <div className="filters">
+        <SearchFilters onFiltersChange={setFilters} initialFilters={filters} />
+      </div>
+
+      <div className="product-grid">
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onProductClick={(id) => {
+              // Cross-micro-frontend communication
+              window.dispatchEvent(
+                new CustomEvent("product:select", {
+                  detail: { productId: id, source: "catalog" },
+                })
+              );
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+```
+
+</CodeWindow>
+
+## Cross-Micro-Frontend Communication
+
+Implement sophisticated communication patterns between independent frontends:
+
+<CodeWindow title="Event Bus Communication">
+
+```javascript
+// shared/EventBus.js - Centralized communication
+class MicroFrontendEventBus {
+  constructor() {
+    this.listeners = new Map();
+    this.middleware = [];
+  }
+
+  // Subscribe to cross-micro-frontend events
+  subscribe(event, callback, options = {}) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+
+    const listener = {
+      callback,
+      microFrontend: options.microFrontend || "unknown",
+      once: options.once || false,
+      priority: options.priority || 0,
+    };
+
+    this.listeners.get(event).push(listener);
+
+    // Sort by priority
+    this.listeners.get(event).sort((a, b) => b.priority - a.priority);
+
+    return () => this.unsubscribe(event, callback);
+  }
+
+  // Emit events across micro-frontends
+  emit(event, data, metadata = {}) {
+    const eventData = {
+      type: event,
+      data,
+      timestamp: Date.now(),
+      source: metadata.source || "unknown",
+      ...metadata,
+    };
+
+    // Apply middleware
+    const processedData = this.middleware.reduce(
+      (acc, middleware) => middleware(acc),
+      eventData
+    );
+
+    const listeners = this.listeners.get(event) || [];
+
+    listeners.forEach((listener) => {
+      try {
+        listener.callback(processedData);
+
+        if (listener.once) {
+          this.unsubscribe(event, listener.callback);
+        }
+      } catch (error) {
+        console.error(`Error in micro-frontend event listener:`, error);
+      }
+    });
+  }
+
+  // Add middleware for event processing
+  use(middleware) {
+    this.middleware.push(middleware);
+  }
+}
+
+// Global event bus instance
+window.microFrontendEventBus = new MicroFrontendEventBus();
+
+// Usage in micro-frontends
+export const eventBus = window.microFrontendEventBus;
+```
+
+</CodeWindow>
+
+## State Management Across Boundaries
+
+Implement shared state management for cross-cutting concerns:
+
+<CodeWindow title="Shared State Management">
+
+```javascript
+// shared/StateManager.js
+class MicroFrontendStateManager {
+  constructor() {
+    this.stores = new Map();
+    this.subscribers = new Map();
+  }
+
+  // Create namespace state store
+  createStore(namespace, initialState = {}) {
+    this.stores.set(namespace, { ...initialState });
+    this.subscribers.set(namespace, new Set());
+
+    return {
+      getState: () => this.stores.get(namespace),
+      setState: (updates) => this.updateState(namespace, updates),
+      subscribe: (callback) => this.subscribe(namespace, callback),
+    };
+  }
+
+  updateState(namespace, updates) {
+    const currentState = this.stores.get(namespace);
+    const newState = { ...currentState, ...updates };
+
+    this.stores.set(namespace, newState);
+
+    // Notify subscribers
+    const subscribers = this.subscribers.get(namespace) || new Set();
+    subscribers.forEach((callback) => {
+      try {
+        callback(newState, currentState);
+      } catch (error) {
+        console.error("State subscriber error:", error);
+      }
+    });
+  }
+
+  subscribe(namespace, callback) {
+    if (!this.subscribers.has(namespace)) {
+      this.subscribers.set(namespace, new Set());
+    }
+
+    this.subscribers.get(namespace).add(callback);
+
+    return () => {
+      this.subscribers.get(namespace).delete(callback);
+    };
+  }
+}
+
+// Global state manager
+window.microFrontendState = new MicroFrontendStateManager();
+
+// Usage: User authentication across micro-frontends
+const userStore = window.microFrontendState.createStore("user", {
+  isAuthenticated: false,
+  profile: null,
+  permissions: [],
+});
+
+// In navigation micro-frontend
+userStore.subscribe((newState) => {
+  if (newState.isAuthenticated) {
+    // Update navigation UI
+    setUserMenu(newState.profile);
+  }
+});
+
+// In products micro-frontend
+userStore.subscribe((newState) => {
+  // Personalize product recommendations
+  updateRecommendations(newState.profile?.preferences);
+});
+```
+
+</CodeWindow>
+
+## Container Orchestration
+
+Deploy micro-frontends with sophisticated container strategies:
+
+<CodeWindow title="Docker & Kubernetes Setup">
+
+```yaml
+# docker-compose.yml - Development
+version: "3.8"
+services:
+  shell:
+    build: ./shell
+    ports: ["3000:80"]
+    environment:
+      - NAVIGATION_URL=http://navigation:80
+      - PRODUCTS_URL=http://products:80
+
+  navigation:
+    build: ./navigation
+    ports: ["3001:80"]
+
+  products:
+    build: ./products
+    ports: ["3002:80"]
+    environment:
+      - API_URL=http://products-api:3000
+
+  nginx-gateway:
+    image: nginx:alpine
+    ports: ["80:80"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on: [shell, navigation, products]
+
+---
+# k8s-deployment.yaml - Production
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-frontend-shell
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: shell
+  template:
+    metadata:
+      labels:
+        app: shell
+    spec:
+      containers:
+        - name: shell
+          image: company/shell:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: MICRO_FRONTEND_REGISTRY
+              value: "http://registry-service:8080"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 80
+```
+
+</CodeWindow>
+
+## Performance Optimization
+
+Optimize loading and runtime performance across micro-frontends:
+
+<CodeWindow title="Advanced Loading Strategies">
+
+```javascript
+// Progressive loading with priority
+class MicroFrontendLoader {
+  constructor() {
+    this.loadingQueue = [];
+    this.loadedMicroFrontends = new Set();
+    this.loadingStrategies = new Map();
+  }
+
+  // Configure loading strategy per micro-frontend
+  configureStrategy(name, strategy) {
+    this.loadingStrategies.set(name, {
+      priority: strategy.priority || 5,
+      preload: strategy.preload || false,
+      chunkSplitting: strategy.chunkSplitting || false,
+      loadCondition: strategy.loadCondition || (() => true),
+    });
+  }
+
+  async loadMicroFrontend(name, fallback = null) {
+    if (this.loadedMicroFrontends.has(name)) {
+      return;
+    }
+
+    const strategy = this.loadingStrategies.get(name);
+
+    // Check load condition
+    if (strategy?.loadCondition && !strategy.loadCondition()) {
+      return fallback;
+    }
+
+    try {
+      // Load with timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Load timeout")), 10000);
+      });
+
+      const loadPromise = import(/* webpackChunkName: "[request]" */ name);
+
+      const module = await Promise.race([loadPromise, timeoutPromise]);
+
+      this.loadedMicroFrontends.add(name);
+      return module;
+    } catch (error) {
+      console.error(`Failed to load micro-frontend ${name}:`, error);
+      return fallback;
+    }
+  }
+
+  // Preload based on user behavior
+  preloadBasedOnBehavior() {
+    // Intersection Observer for viewport-based loading
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const microFrontend = entry.target.dataset.microFrontend;
+          this.loadMicroFrontend(microFrontend);
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-micro-frontend]").forEach((el) => {
+      observer.observe(el);
+    });
+  }
+}
+```
+
+</CodeWindow>
+
+Micro-frontends enable true frontend scalability by allowing independent development, deployment, and scaling of UI components. When implemented correctly, they solve the organizational and technical challenges of large-scale frontend applications while maintaining cohesive user experiences.
