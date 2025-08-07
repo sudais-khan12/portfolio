@@ -1,0 +1,353 @@
+import { BlogLayout } from "@/components/BlogLayout";
+import { CodeWindow } from "@/components/CodeWindow";
+
+export const meta = {
+  date: "2024-09-30",
+  title: "GraphQL Federation: Building Scalable Distributed APIs",
+  description:
+    "Master Apollo Federation patterns for microservices architecture, schema composition, and distributed query optimization at enterprise scale.",
+  image:
+    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3",
+  tags: ["GraphQL", "Microservices", "Architecture"],
+};
+
+export default (props) => <BlogLayout meta={meta} {...props} />;
+
+GraphQL Federation solves the monolithic schema problem by enabling distributed GraphQL architectures. Instead of one massive schema, federation composes multiple service schemas into a unified graph, enabling true microservices scalability.
+
+## The Federation Architecture
+
+Federation introduces the concept of a supergraph - a composed schema from multiple subgraphs. The Apollo Gateway acts as a query planner, intelligently routing requests across services.
+
+<CodeWindow title="Gateway Configuration">
+
+```javascript
+import { ApolloGateway, IntrospectAndCompose } from "@apollo/gateway";
+import { ApolloServer } from "apollo-server-express";
+
+const gateway = new ApolloGateway({
+  supergraphSdl: new IntrospectAndCompose({
+    subgraphs: [
+      { name: "users", url: "http://users-service:4001/graphql" },
+      { name: "products", url: "http://products-service:4002/graphql" },
+      { name: "orders", url: "http://orders-service:4003/graphql" },
+      { name: "reviews", url: "http://reviews-service:4004/graphql" },
+    ],
+  }),
+  debug: false,
+  queryPlannerConfig: {
+    // Advanced query optimization
+    reuseQueryFragments: true,
+    incrementalDelivery: {
+      enableDefer: true,
+    },
+  },
+});
+
+const server = new ApolloServer({
+  gateway,
+  subscriptions: false,
+  plugins: [
+    // Custom plugins for monitoring and caching
+    require("./plugins/monitoring"),
+    require("./plugins/distributed-cache"),
+  ],
+});
+```
+
+</CodeWindow>
+
+## Entity Resolution Patterns
+
+Federation's power lies in entity resolution - seamlessly joining data across services:
+
+<CodeWindow title="User Service Schema">
+
+```graphql
+# users-service schema
+type User @key(fields: "id") {
+  id: ID!
+  email: String!
+  username: String!
+  profile: UserProfile
+}
+
+type UserProfile {
+  firstName: String!
+  lastName: String!
+  avatar: String
+  createdAt: DateTime!
+}
+
+extend type Query {
+  user(id: ID!): User
+  users(limit: Int = 20): [User!]!
+}
+```
+
+</CodeWindow>
+
+<CodeWindow title="Orders Service Extension">
+
+```graphql
+# orders-service schema
+extend type User @key(fields: "id") {
+  id: ID! @external
+  orders(status: OrderStatus): [Order!]!
+  totalSpent: Float!
+}
+
+type Order @key(fields: "id") {
+  id: ID!
+  userId: ID!
+  items: [OrderItem!]!
+  total: Float!
+  status: OrderStatus!
+  createdAt: DateTime!
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+```
+
+</CodeWindow>
+
+## Advanced Resolver Implementation
+
+Federated resolvers handle cross-service data fetching with sophisticated patterns:
+
+<CodeWindow title="Federated Resolvers">
+
+```javascript
+// users-service resolvers
+const resolvers = {
+  User: {
+    // Entity resolver - called by gateway
+    __resolveReference: async (user, { dataSources }) => {
+      return dataSources.userAPI.getUserById(user.id);
+    },
+
+    profile: async (user, args, { dataSources }) => {
+      // Lazy load profile data
+      return dataSources.userAPI.getUserProfile(user.id);
+    },
+  },
+
+  Query: {
+    user: async (_, { id }, { dataSources }) => {
+      return dataSources.userAPI.getUserById(id);
+    },
+
+    users: async (_, { limit }, { dataSources }) => {
+      return dataSources.userAPI.getUsers({ limit });
+    },
+  },
+};
+
+// orders-service resolvers
+const resolvers = {
+  User: {
+    // Extend User type from another service
+    __resolveReference: async (user) => {
+      return { __typename: "User", id: user.id };
+    },
+
+    orders: async (user, { status }, { dataSources }) => {
+      return dataSources.orderAPI.getOrdersByUserId(user.id, { status });
+    },
+
+    totalSpent: async (user, args, { dataSources, redisCache }) => {
+      // Cache expensive calculations
+      const cacheKey = `user:${user.id}:totalSpent`;
+      let total = await redisCache.get(cacheKey);
+
+      if (!total) {
+        total = await dataSources.orderAPI.calculateTotalSpent(user.id);
+        await redisCache.setex(cacheKey, 3600, total); // 1 hour cache
+      }
+
+      return parseFloat(total);
+    },
+  },
+
+  Order: {
+    __resolveReference: async (order, { dataSources }) => {
+      return dataSources.orderAPI.getOrderById(order.id);
+    },
+  },
+};
+```
+
+</CodeWindow>
+
+## Query Planning Optimization
+
+The gateway intelligently plans queries to minimize service calls:
+
+<CodeWindow title="Optimized Query Example">
+
+```graphql
+# Client query
+query GetUserWithOrders($userId: ID!) {
+  user(id: $userId) {
+    username
+    email
+    profile {
+      firstName
+      lastName
+    }
+    orders(status: DELIVERED) {
+      id
+      total
+      items {
+        productId
+        quantity
+        price
+      }
+    }
+    totalSpent
+  }
+}
+
+# Gateway generates optimized query plan:
+# 1. Fetch user from users-service
+# 2. Parallel fetch orders and totalSpent from orders-service
+# 3. Compose response
+```
+
+</CodeWindow>
+
+## Schema Composition and Validation
+
+Federation 2.0 introduces powerful composition directives:
+
+<CodeWindow title="Advanced Schema Composition">
+
+```graphql
+# Advanced composition patterns
+type Product @key(fields: "id") @key(fields: "sku") {
+  id: ID!
+  sku: String! @shareable
+  name: String!
+  price: Float! @shareable
+}
+
+# Multiple services can provide shareable fields
+extend type Product @key(fields: "id") {
+  id: ID! @external
+  sku: String! @external
+  inventory: Int! @requires(fields: "sku")
+  isInStock: Boolean! @requires(fields: "inventory")
+}
+
+# Interface composition across services
+interface Node {
+  id: ID!
+}
+
+type User implements Node @key(fields: "id") {
+  id: ID!
+  username: String!
+}
+
+type Product implements Node @key(fields: "id") {
+  id: ID!
+  name: String!
+}
+```
+
+</CodeWindow>
+
+## Distributed Caching Strategy
+
+Implement sophisticated caching across the federated architecture:
+
+<CodeWindow title="Distributed Cache Implementation">
+
+```javascript
+class FederatedCachePlugin {
+  requestDidStart() {
+    return {
+      willSendResponse: async (requestContext) => {
+        const { response, request, cache } = requestContext;
+
+        // Cache based on query complexity and data sensitivity
+        if (this.shouldCache(request.query)) {
+          const cacheKey = this.generateCacheKey(request);
+          const ttl = this.calculateTTL(request.query);
+
+          await cache.set(cacheKey, response.data, { ttl });
+        }
+      },
+
+      didResolveSource: async (requestContext) => {
+        // Implement field-level caching
+        const fieldCacheKey = this.getFieldCacheKey(
+          requestContext.source,
+          requestContext.info
+        );
+
+        const cachedResult = await requestContext.cache.get(fieldCacheKey);
+        if (cachedResult) {
+          return cachedResult;
+        }
+      },
+    };
+  }
+
+  shouldCache(query) {
+    // Smart caching decisions based on query analysis
+    const complexity = this.calculateComplexity(query);
+    const hasPersonalData = this.containsPersonalData(query);
+
+    return complexity > 50 && !hasPersonalData;
+  }
+}
+```
+
+</CodeWindow>
+
+## Performance Monitoring
+
+Monitor federated performance across all services:
+
+<CodeWindow title="Federation Monitoring">
+
+```javascript
+const federationMetrics = {
+  queryPlanCache: new Map(),
+  serviceLatency: new Map(),
+
+  recordQueryPlan: (query, plan) => {
+    const planHash = hash(plan);
+    federationMetrics.queryPlanCache.set(query, {
+      planHash,
+      serviceCount: plan.node.service.length,
+      estimatedCost: plan.node.estimatedCost,
+    });
+  },
+
+  recordServiceLatency: (serviceName, latency) => {
+    if (!federationMetrics.serviceLatency.has(serviceName)) {
+      federationMetrics.serviceLatency.set(serviceName, []);
+    }
+
+    const latencies = federationMetrics.serviceLatency.get(serviceName);
+    latencies.push({ timestamp: Date.now(), latency });
+
+    // Keep only last 1000 measurements
+    if (latencies.length > 1000) {
+      latencies.shift();
+    }
+  },
+};
+```
+
+</CodeWindow>
+
+GraphQL Federation transforms monolithic APIs into scalable, distributed architectures. By enabling autonomous service development while maintaining a unified schema, it's the key to building enterprise-grade GraphQL systems that scale with your organization.
